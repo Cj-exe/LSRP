@@ -14,6 +14,8 @@ function fisherYatesShuffle(arr) {
     return a;
 }
 
+module.exports = { endGiveaway, fisherYatesShuffle };
+
 async function endGiveaway(client, messageId) {
     const giveaway = db.prepare("SELECT * FROM giveaways WHERE messageId = ? AND status = 'active'").get(messageId);
     if (!giveaway) return;
@@ -21,10 +23,17 @@ async function endGiveaway(client, messageId) {
     // Mark as ended immediately to prevent double-triggers from the reroll command or restarts
     db.prepare("UPDATE giveaways SET status = 'ended' WHERE messageId = ?").run(messageId);
 
-    const channel = await client.channels.fetch(giveaway.channelId).catch(() => null);
+    const channel = await client.channels.fetch(giveaway.channelId).catch(err => {
+        console.warn(`[GIVEAWAY] Could not fetch channel ${giveaway.channelId}: ${err.message}`);
+        return null;
+    });
     if (!channel) return;
 
-    const message = await channel.messages.fetch(messageId).catch(() => null);
+    const message = await channel.messages.fetch(messageId).catch(err => {
+        console.warn(`[GIVEAWAY] Could not fetch message ${messageId}: ${err.message}`);
+        return null;
+    });
+    if (!message) return;
 
     // Fetch all entries from the relational table
     const allEntries = db.prepare("SELECT userId FROM giveaway_entries WHERE messageId = ?").all(messageId);
@@ -75,10 +84,10 @@ async function endGiveaway(client, messageId) {
     }
 
     try {
-        await channel.send(`🎉 Congratulations ${winnerMentions}! You won the **${giveaway.prize}**! ${config.emojis.tada}`);
+        await channel.send({
+            content: `🎉 Congratulations ${winnerMentions}! You won the **${giveaway.prize}**! ${config.emojis.tada}`,
+        });
     } catch (e) {
         console.error(`[GIVEAWAY] Could not announce winner in channel ${giveaway.channelId}:`, e.message);
     }
 }
-
-module.exports = { endGiveaway };

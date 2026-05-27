@@ -133,5 +133,28 @@ module.exports = {
         // Start after an initial 10-second delay to let caches warm up, then loop forever
         setTimeout(() => startLivePanelLoop(client), 10000);
         console.log("[LIVE PANEL] Live panel loop scheduled.");
+
+        // ── Periodic Memory Cleanup ──────────────────────────────────────────
+        // Every hour, check for and remove abandoned vote polls that are over 2 hours old
+        setInterval(() => {
+            if (client.voteMap) {
+                const now = Date.now();
+                let deletedCount = 0;
+                for (const [sessionId, votes] of client.voteMap.entries()) {
+                    // Check if the poll is old. We can use the timestamp of the first vote
+                    // or just assume if it's still there after a long time, it's abandoned.
+                    // The vote_button.js already has a 1-hour timeout, but this is a safety net.
+                    // Since we don't store "creation time" easily without changing structure,
+                    // we'll just check if it's empty or has very old votes.
+                    const oldestVote = Math.min(...([...votes.values()].map(v => v.timestamp) || [now]));
+                    if (now - oldestVote > 7200000) { // 2 hours
+                        client.voteMap.delete(sessionId);
+                        if (client.activePollId === sessionId) client.activePollId = null;
+                        deletedCount++;
+                    }
+                }
+                if (deletedCount > 0) console.log(`[CLEANUP] Removed ${deletedCount} abandoned vote polls.`);
+            }
+        }, 3600000);
     },
 };

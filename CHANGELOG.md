@@ -1,7 +1,23 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
- 
+
+## [1.1.0] - 2026-04-27
+
+### Added
+- **Testing Framework**: Integrated Jest for unit testing and added initial tests for utility functions.
+- **Graceful Shutdown**: Added process handlers to ensure the SQLite database closes cleanly on termination.
+- **Memory Management**: Implemented an automated cleanup loop to remove abandoned session polls and prevent memory leaks.
+- **Reliability**: Added a retry mechanism with exponential backoff for the DM notification queue to handle temporary API errors.
+
+### Security
+- **Owner ID Management**: Moved the hardcoded/obfuscated Developer ID to environment variables (`OWNER_ID`) for better security and easier configuration.
+- **Permission Guarding**: Added a proactive check for the `ManageRoles` permission before attempting to toggle user roles.
+
+### Fixed
+- **Giveaway Robustness**: Fixed potential crashes when giveaway messages or channels are deleted mid-execution.
+- **DM Queue Stability**: Improved error handling in the session start DM queue to prevent unhandled rejections.
+
 ## [1.0.2] - 2026-04-26
  
 ### Added

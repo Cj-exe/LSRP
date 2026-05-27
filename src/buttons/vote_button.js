@@ -7,18 +7,34 @@ const editDebounceTimers = new Map();
 // Sends DMs to voters one at a time to avoid triggering Discord's DM rate limits
 async function sendDMQueue(client, votersArray, components) {
     for (const v of votersArray) {
-        try {
-            const user = await client.users.fetch(v.userId);
-            const dmEmbed = new EmbedBuilder()
-                .setColor(config.theme.color)
-                .setDescription(
-                    `Hey <@${v.userId}>, thanks for voting! The session is starting now. ` +
-                    `Please join to avoid moderation.`
-                );
-            await user.send({ embeds: [dmEmbed], components: components });
-        } catch (e) {
-            // DMs can be closed — this is expected and not a critical error
-            console.warn(`[DM SKIP] Could not DM user ${v.userId}: ${e.message}`);
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                const user = await client.users.fetch(v.userId);
+                const dmEmbed = new EmbedBuilder()
+                    .setColor(config.theme.color)
+                    .setDescription(
+                        `Hey <@${v.userId}>, thanks for voting! The session is starting now. ` +
+                        `Please join to avoid moderation.`
+                    );
+                await user.send({ embeds: [dmEmbed], components: components });
+                break; // Success, move to next user
+            } catch (e) {
+                // Rate limit (429) or other temporary error - retry with backoff
+                if (e.status === 429 || e.status === 500) {
+                    retries--;
+                    if (retries > 0) {
+                        const delay = (4 - retries) * 2000;
+                        console.warn(`[DM RETRY] Retrying DM for ${v.userId} in ${delay}ms...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        continue;
+                    }
+                }
+
+                // DMs can be closed or other permanent errors — skip user
+                console.warn(`[DM SKIP] Could not DM user ${v.userId}: ${e.message}`);
+                break;
+            }
         }
         // 1-second gap between each DM to stay well within Discord's rate limits
         await new Promise(res => setTimeout(res, 1000));

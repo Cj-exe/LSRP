@@ -13,6 +13,14 @@ module.exports = {
             return interaction.reply({ content: "⚠️ This button can only be used within a server.", flags: [64] });
         }
 
+        // Check if bot has Manage Roles permission
+        if (!interaction.guild.members.me.permissions.has("ManageRoles")) {
+            return interaction.reply({
+                content: "⚠️ I do not have the **Manage Roles** permission to perform this action.",
+                flags: [64]
+            });
+        }
+
         try {
             const hasRole = interaction.member.roles.cache.has(roleId);
             if (hasRole) {

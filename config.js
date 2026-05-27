@@ -3,6 +3,7 @@ require("dotenv").config();
 module.exports = {
     bot: {
         token: process.env.TOKEN,
+        ownerId: process.env.OWNER_ID,
         name: process.env.BOT_NAME || "Nova ERLC Manager",
         statusText: process.env.BOT_STATUS_TEXT || "Watching ER:LC Private Server",
     },

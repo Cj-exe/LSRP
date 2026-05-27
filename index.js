@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
-require("./db"); // Initialize DB
+const db = require("./db"); // Initialize DB
 
 const client = new Client({
     intents: [
@@ -94,3 +94,21 @@ client.login(config.bot.token).catch(err => {
     }
     process.exit(1);
 });
+
+// --- Graceful Shutdown ---
+async function shutdown() {
+    console.log("\n[SHUTDOWN] Gracefully shutting down...");
+    try {
+        await client.destroy();
+        console.log("[SHUTDOWN] Discord client destroyed.");
+        db.close();
+        console.log("[SHUTDOWN] Database connection closed.");
+        process.exit(0);
+    } catch (err) {
+        console.error("[SHUTDOWN ERROR]", err);
+        process.exit(1);
+    }
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
